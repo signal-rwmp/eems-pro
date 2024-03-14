@@ -550,7 +550,7 @@ class EEMSModelRun(object):
         messages.addMessage(EEMSCSVFNm)
         return EEMSCSVFNm
 
-    def JoinCSVtoOutputRUPro(self, csv, inputRU, outputRU, messages):
+    '''def JoinCSVtoOutputRUPro(self, csv, inputRU, outputRU, messages):
         """ ArcGIS Pro (Python 3 Join): Join the CSV containing the EEMS Input & Output Fields to the Output Reporting Units using Spatially Enabled Data Frames and Pandas"""
 
         OIDField = arcpy.Describe(str(inputRU)).OIDFieldName
@@ -563,7 +563,28 @@ class EEMSModelRun(object):
         join_sdf.spatial.to_featureclass(str(outputRU), sanitize_columns=False)
 
         messages.addMessage(str(outputRU))
+        return'''
+    def JoinCSVtoOutputRUPro(self, csv, inputRU, outputRU, messages):
+        """ ArcGIS Pro (Python 3 Join): Join the CSV containing the EEMS Input & Output Fields to the Output Reporting Units using Spatially Enabled Data Frames and Pandas"""
+
+        OIDField = arcpy.Describe(str(inputRU)).OIDFieldName
+
+        csv_df = pd.read_csv(csv)
+        # Ensure CSVID is int64
+        csv_df['CSVID'] = csv_df['CSVID'].astype('int64')
+
+        ru_sdf = pd.DataFrame.spatial.from_featureclass(inputRU, fields=[OIDField])
+        # Ensure OBJECTID is int64
+        ru_sdf[OIDField] = ru_sdf[OIDField].astype('int64')
+
+        join_sdf = pd.merge(ru_sdf, csv_df, left_on=OIDField, right_on="CSVID", how="inner")
+
+        # Fields get dropped if any input field is > 64 characters.
+        join_sdf.spatial.to_featureclass(str(outputRU), sanitize_columns=False)
+
+        messages.addMessage(str(outputRU))
         return
+
 
     def JoinCSVtoOutputRU(self, csv, outputRU, messages):
         """ ArcGIS Desktop (Python 2 Join): Join the CSV containing the EEMS Input & Output Fields to the Output Reporting Units using ArcGIS JoinField method."""
